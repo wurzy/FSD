@@ -1,0 +1,44 @@
+O facto de criar threads por cada cliente cria um overload enorme e não é escalável.
+
+O escalonador do SO tem de escolher uma thread de possivelmente milhões, ao ter muitos sockets ativos vai ser gasto tempo a escolher o próximo socket.
+
+OutputStream os... os.write(...) ao escrever desta forma, o java faz escrita byte a byte. Ao ser um buffer de 100 bytes, o SO manda 100*100 mensagens TCP, péssima perfomance.
+
+BufferedInputStream é para reservar memoria em modo utilizador, que é mais rapido que fazer system calls ao kernel.
+
+Tendo possivelmente milhões de ligações e ter 2 buffers (BufferedIn BufferedOut) para cada conexão ainda há um overload maior na memória (b * 2 * n, b=#bytes).
+
+Os sockets são basicamente cópias dos dados em ambos os lados onde a receção de ACK faz wipe.
+
+for(....) {
+    d.write(....) chega a um ponto que fica bloqueado à espera de slot no buffer, no caso daquele chat room se houver um cliente mais lento o buffer vai encher muito rápido e bloqueia.
+} 
+
+Se pouparmos nos recursos, é díficil lidar com a dinâmica (clientes afetam os outros). Se lidar com os problemas da dinâmica, é preciso usar mais recursos. É um trade-off a fazer.
+
+Uma boa tática é fazer com que o nº de threads não dependa dos clientes ligados, para evitar que escale para fora de controlo.
+
+Os bufferedoutput etc sairam todo na package nio do java, a camada de dados passa a ser mais explícita tipo C.
+ServerSocketChannel ss = ServerSocketChannel.open();
+ss.bind(new inetAddress(12345));
+
+while(true){
+    ...
+}
+
+Os buffers em nio são Buffer = Array + indexes;
+campos: position, limit e capacity.
+
+Os duplicate deles, são 2 objetos diferentes mas com apontadores para os mesmos arrays.
+
+A operação flip faz com que o limit = position e position = 0 (serve para basicamente escrever HELLO e no fim voltar pro H pra escrever noutro lado)
+
+try {
+    ByteBuffer b = ByteBuffer.allocate(1000);
+    s.read(buf)
+    buf.flip()
+    for(SocketChannel r : receivers){
+        r.write(buf.duplicate()); // por causa dos apontadores, tipo C, usar duplicados para nao mexer no original e manter ordem relativa.
+    }
+    buf.clear();
+}
