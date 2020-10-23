@@ -16,17 +16,15 @@ public class ClientReader implements Runnable{
     }
 
     public void run(){
-        String str;
         try{
-            int n;
-            buf.flip();
-            while((n= s.read(buf))!=-1){
-                str = StandardCharsets.UTF_8.decode(buf).toString();
-                System.out.println(str);
+            while(s.read(buf)!=-1){
+                buf.flip();
+                String str = StandardCharsets.UTF_8.decode(buf).toString();
+                System.out.println("READER: " + str);
                 buf.clear();
                 Thread.sleep(ms);
             }
         }
-        catch(Exception e) {e.toString();}
+        catch(Exception e) {System.out.println(e.toString());}
     }
 }

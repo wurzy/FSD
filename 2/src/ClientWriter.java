@@ -19,9 +19,10 @@ public class ClientWriter implements Runnable{
         try{
             int id = 0;
             while(true){
-                String send = "hello im an overload bot from " + s.getRemoteAddress() + ". ID: " + id++;
+                String send = "hello im an overload bot from " + s.getLocalAddress() + ". ID: " + id++;
                 buf = StandardCharsets.UTF_8.encode(send);
-                buf.flip();
+                System.out.println("WRITER: " + StandardCharsets.UTF_8.decode(buf.duplicate()).toString()); // duplicate para nao estourar os pointers
+                //buf.flip();  Não colocar isto com o encode porque ele já faz o flip internamente.
                 s.write(buf);
                 buf.clear();
                 Thread.sleep(ms);

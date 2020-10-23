@@ -17,32 +17,29 @@ public class Worker implements Runnable {
     }
 
     public void run(){
-        String input;
-        int n;
-        while(true) {
-            try {
-                if( (n = s.read(buf)) == -1 ) {
-                    s.close();
-                    break;
-                }
-                System.out.println(n);
+        try{
+            while(s.read(buf)!=-1){
                 buf.flip();
-                input = StandardCharsets.UTF_8.decode(buf).toString();
-                System.out.println(s.getRemoteAddress() +" >> " + input);
-                replyAll(input);
+                String in = StandardCharsets.UTF_8.decode(buf.duplicate()).toString();
+                System.out.println(s.getRemoteAddress() +" >> " + in);
+                replyAll();
                 buf.clear();
-            } catch (IOException e) {
-                e.toString();
             }
+            System.out.println(s.getRemoteAddress() + " disconnected.");
+            s.shutdownInput();
+            s.shutdownOutput();
+            s.close();
         }
+        catch(Exception e){System.out.println(e.toString());}
     }
 
-    void replyAll(String msg){
+    private void replyAll(){
         try{
             for(SocketChannel s: clients) {
                 s.write(buf.duplicate());
+                s.write(StandardCharsets.UTF_8.encode("\n"));
             }
         }
-        catch(Exception e){e.toString();}
+        catch(Exception e){System.out.println(e.toString());}
     }
 }
